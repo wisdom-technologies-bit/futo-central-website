@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { ImagePlus, LoaderCircle, Save, UploadCloud } from 'lucide-react'
-import { createDraft } from '@/app/editorial/actions'
+import { createDraft, updateArticle } from '@/app/editorial/actions'
+import type { Article } from './data'
 
 type Option = { id: string; name: string }
 
-export function NewsComposer({ categories, authors }: { categories: Option[]; authors: Option[] }) {
-  const [image, setImage] = useState('')
+export function NewsComposer({ categories, authors, article }: { categories: Option[]; authors: Option[]; article?: Article }) {
+  const [image, setImage] = useState(article?.image || '')
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
@@ -23,12 +24,13 @@ export function NewsComposer({ categories, authors }: { categories: Option[]; au
     } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Upload failed.') } finally { setUploading(false) }
   }
 
-  return <form className="news-composer" action={createDraft}>
+  const action = article ? updateArticle.bind(null, article.id) : createDraft
+  return <form className="news-composer" action={action}>
     <div className="composer-main">
-      <div className="composer-heading"><div><p className="eyebrow">EDITORIAL / NEWS</p><h1>New story</h1><p className="muted">Shape the next story from the FUTO Central newsroom.</p></div><button className="button button-green" type="submit"><Save size={15} /> Save draft</button></div>
-      <label className="form-field"><span>Headline</span><input name="title" required maxLength={180} placeholder="Write a clear editorial headline" /></label>
-      <label className="form-field"><span>Standfirst</span><textarea name="excerpt" required maxLength={500} rows={3} placeholder="A concise summary for cards, search and social previews" /></label>
-      <label className="form-field"><span>Article content</span><textarea name="content" required maxLength={100000} rows={18} placeholder="Write the full story. Markdown is supported." /></label>
+      <div className="composer-heading"><div><p className="eyebrow">EDITORIAL / NEWS</p><h1>{article ? 'Edit story' : 'New story'}</h1><p className="muted">{article ? 'Update this story from the FUTO Central newsroom.' : 'Shape the next story from the FUTO Central newsroom.'}</p></div><button className="button button-green" type="submit"><Save size={15} /> Save draft</button></div>
+      <label className="form-field"><span>Headline</span><input name="title" required maxLength={180} defaultValue={article?.title} placeholder="Write a clear editorial headline" /></label>
+      <label className="form-field"><span>Standfirst</span><textarea name="excerpt" required maxLength={500} rows={3} defaultValue={article?.excerpt} placeholder="A concise summary for cards, search and social previews" /></label>
+      <label className="form-field"><span>Article content</span><textarea name="content" required maxLength={100000} rows={18} defaultValue={article?.content} placeholder="Write the full story. Markdown is supported." /></label>
       <details className="seo-panel"><summary>Search optimisation</summary><div className="form-grid"><label className="form-field"><span>SEO title</span><input name="seoTitle" maxLength={180} placeholder="Optional search title" /></label><label className="form-field"><span>Meta description</span><textarea name="metaDescription" maxLength={500} rows={3} /></label></div></details>
     </div>
     <aside className="composer-sidebar">

@@ -16,6 +16,11 @@ export type Article = {
   featured?: boolean
   trending?: boolean
   views: number
+  categoryId?: string
+  authorId?: string
+  status?: string
+  seoTitle?: string
+  metaDescription?: string
 }
 
 export const images = {
