@@ -1,9 +1,9 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import Script from 'next/script'
 import './globals.css'
 import { absoluteUrl, siteName, siteDescription } from '@/lib/seo'
 import { OneSignalProvider } from '@/components/notifications/onesignal-provider'
+import { AdSenseLoader } from '@/components/adsense-loader'
 
 export const metadata: Metadata = {
   metadataBase: new URL(absoluteUrl('/')),
@@ -35,12 +35,8 @@ export default function RootLayout({
       <body className="antialiased">
   <OneSignalProvider>{children}</OneSignalProvider>
 
-  <Script
-    async
-    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5717691070315159"
-    crossOrigin="anonymous"
-    strategy="afterInteractive"
-  />
+  <AdSenseLoader />
+
 
   {process.env.NODE_ENV === 'production' && <Analytics />}
 </body>
