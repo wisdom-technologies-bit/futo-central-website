@@ -4,6 +4,15 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAdmin, requireRole, logoutAdmin } from '@/lib/editorial-auth'
 import { withDatabase } from '@/lib/db'
+import { sendNewsNotification } from '@/lib/onesignal'
+
+async function notifyOnce(id: string, article: { title: string; slug: string; image?: string }) {
+  try {
+    const claim = await withDatabase((db) => db.query(`UPDATE articles SET notification_sent_at = NOW() WHERE id = $1 AND status = 'published' AND notification_sent_at IS NULL RETURNING id`, [id]))
+    if (!claim.rowCount) return
+    try { await sendNewsNotification(article) } catch (error) { console.error('[v0] OneSignal notification failed:', error); await withDatabase((db) => db.query(`UPDATE articles SET notification_sent_at = NULL WHERE id = $1`, [id])) }
+  } catch (error) { console.error('[v0] OneSignal notification claim failed:', error) }
+}
 
 const text = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : ''
 
@@ -28,6 +37,7 @@ export async function createDraft(formData: FormData) {
   const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${Date.now()}`
   const publishedAt = status === 'published' ? new Date().toISOString() : null
   const result = await withDatabase((db) => db.query(`INSERT INTO articles (title, slug, excerpt, content, category_id, author_id, featured_image, featured_image_alt, status, published_at, scheduled_for, reading_time, seo_title, meta_description, is_featured) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`, [title, slug, excerpt, content, categoryId, authorId, image, imageAlt, status, publishedAt, scheduledFor, readingTime, seoTitle, metaDescription, isFeatured]))
+  if (status === 'published') await notifyOnce(result.rows[0].id, { title, slug, image: image || undefined })
   revalidatePath('/editorial/news')
   redirect(`/editorial/news/${result.rows[0].id}`)
 }
@@ -40,7 +50,8 @@ export async function updateArticle(id: string, formData: FormData) {
   const image = text(formData.get('featuredImage'), 2000) || null, imageAlt = text(formData.get('featuredImageAlt'), 180) || null
   const status = ['draft', 'published', 'scheduled', 'archived'].includes(String(formData.get('status'))) ? String(formData.get('status')) : 'draft'
   if (!title || !excerpt || !content || (image && !imageAlt)) throw new Error('Title, excerpt, content and image alt text are required.')
-  await withDatabase((db) => db.query(`UPDATE articles SET title=$1, excerpt=$2, content=$3, category_id=$4, author_id=$5, featured_image=$6, featured_image_alt=$7, status=$8, reading_time=$9, seo_title=$10, meta_description=$11, is_featured=$12, scheduled_for=$13, published_at=CASE WHEN $8='published' AND published_at IS NULL THEN NOW() WHEN $8<>'published' THEN NULL ELSE published_at END, updated_at=NOW() WHERE id=$14`, [title, excerpt, content, categoryId, authorId, image, imageAlt, status, Math.max(1, Math.min(120, Number(formData.get('readingTime')) || 4)), text(formData.get('seoTitle'), 180) || null, text(formData.get('metaDescription'), 500) || null, formData.get('isFeatured') === 'on', text(formData.get('scheduledFor'), 40) || null, id]))
+  const result = await withDatabase((db) => db.query(`UPDATE articles SET title=$1, excerpt=$2, content=$3, category_id=$4, author_id=$5, featured_image=$6, featured_image_alt=$7, status=$8, reading_time=$9, seo_title=$10, meta_description=$11, is_featured=$12, scheduled_for=$13, published_at=CASE WHEN $8='published' AND published_at IS NULL THEN NOW() WHEN $8<>'published' THEN NULL ELSE published_at END, updated_at=NOW() WHERE id=$14 RETURNING id, slug, featured_image`, [title, excerpt, content, categoryId, authorId, image, imageAlt, status, Math.max(1, Math.min(120, Number(formData.get('readingTime')) || 4)), text(formData.get('seoTitle'), 180) || null, text(formData.get('metaDescription'), 500) || null, formData.get('isFeatured') === 'on', text(formData.get('scheduledFor'), 40) || null, id]))
+  if (status === 'published' && result.rowCount) await notifyOnce(id, { title, slug: result.rows[0].slug, image: result.rows[0].featured_image || undefined })
   revalidatePath('/editorial/news'); revalidatePath('/news')
 }
 
