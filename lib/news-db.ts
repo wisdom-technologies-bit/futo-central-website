@@ -25,10 +25,20 @@ function mapRow(row: any): Article {
     tags: Array.isArray(row.tags) ? row.tags : [],
     featured: Boolean(row.is_featured),
     views: Number(row.views || 0),
+    categoryId: row.category_id,
+    authorId: row.author_id,
+    status: row.status,
+    seoTitle: row.seo_title,
+    metaDescription: row.meta_description,
   }
 }
-const select = `SELECT a.id,a.slug,a.title,a.excerpt,a.content,a.featured_image,a.featured_image_alt,a.status,a.published_at,a.reading_time,a.is_featured,a.views,c.name AS category_name,au.name AS author_name,COALESCE((SELECT array_agg(t.name ORDER BY t.name) FROM article_tags at JOIN tags t ON t.id=at.tag_id WHERE at.article_id=a.id),'{}') AS tags FROM articles a LEFT JOIN categories c ON c.id=a.category_id LEFT JOIN authors au ON au.id=a.author_id`
+const select = `SELECT a.id,a.slug,a.title,a.excerpt,a.content,a.category_id,a.author_id,a.seo_title,a.meta_description,a.featured_image,a.featured_image_alt,a.status,a.published_at,a.reading_time,a.is_featured,a.views,c.name AS category_name,au.name AS author_name,COALESCE((SELECT array_agg(t.name ORDER BY t.name) FROM article_tags at JOIN tags t ON t.id=at.tag_id WHERE at.article_id=a.id),'{}') AS tags FROM articles a LEFT JOIN categories c ON c.id=a.category_id LEFT JOIN authors au ON au.id=a.author_id`
 async function query(sql: string, values: unknown[] = []) { const db = getDatabase(); if (!db) throw new Error('DATABASE_NOT_CONFIGURED'); return db.query(sql, values) }
+export async function getArticleById(id: string) {
+  const result = await query(`${select} WHERE a.id=$1 LIMIT 1`, [id])
+  return result.rows[0] ? mapRow(result.rows[0]) : undefined
+}
+
 export async function getNewsCategories() {
   const result = await query('SELECT id, name, slug FROM categories ORDER BY name ASC')
   return result.rows as { id: string; name: string; slug: string }[]
