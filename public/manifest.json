@@ -1,0 +1,10 @@
+{
+  "name": "FUTO Central",
+  "short_name": "FUTO Central",
+  "description": "FUTO news, campus updates and stories.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f9f5",
+  "theme_color": "#073b25",
+  "icons": []
+}
