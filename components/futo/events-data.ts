@@ -1,0 +1,16 @@
+export type FutoEvent = { id:string; slug:string; title:string; description:string; category:string; date:string; time:string; location:string; organizer:string; status:'Upcoming'|'Completed'|'Cancelled'; featured?:boolean }
+export const eventCategories = ['All','Academic','Student Life','Technology','Sports','Conferences','Competitions','Workshops','Community']
+export const futoEvents: FutoEvent[] = [
+{id:'innovation-showcase',slug:'student-innovation-showcase',title:'Student Innovation Showcase',description:'Demo event listing for student prototypes, ideas and practical solutions.',category:'Technology',date:'2026-08-29',time:'10:00 AM',location:'FUTO Main Auditorium',organizer:'FUTO Central Demo Calendar',status:'Upcoming',featured:true},
+{id:'engineering-exhibition',slug:'engineering-project-exhibition',title:'Engineering Project Exhibition',description:'A prototype calendar listing for engineering projects and demonstrations.',category:'Competitions',date:'2026-09-03',time:'11:00 AM',location:'Innovation Hub',organizer:'FUTO Central Demo Calendar',status:'Upcoming'},
+{id:'campus-workshop',slug:'campus-technology-workshop',title:'Campus Technology Workshop',description:'A demo workshop for exploring digital tools, practical learning and collaboration.',category:'Workshops',date:'2026-09-12',time:'2:00 PM',location:'Digital Learning Centre',organizer:'FUTO Central Demo Calendar',status:'Upcoming'},
+{id:'sports-festival',slug:'inter-departmental-sports-competition',title:'Inter-Departmental Sports Competition',description:'Demo event information for an afternoon of friendly campus competition.',category:'Sports',date:'2026-09-18',time:'9:00 AM',location:'FUTO Sports Complex',organizer:'FUTO Central Demo Calendar',status:'Upcoming'},
+{id:'research-presentation',slug:'academic-research-presentation',title:'Academic Research Presentation',description:'A prototype listing for sharing research questions, findings and ideas.',category:'Academic',date:'2026-07-18',time:'1:00 PM',location:'Lecture Theatre A',organizer:'FUTO Central Demo Calendar',status:'Completed'},
+{id:'leadership-conference',slug:'student-leadership-conference',title:'Student Leadership Conference',description:'A demo community gathering focused on service, collaboration and student leadership.',category:'Conferences',date:'2026-07-05',time:'10:00 AM',location:'Convocation Arena',organizer:'FUTO Central Demo Calendar',status:'Completed'},
+]
+export const getUpcomingEvents = () => futoEvents.filter(e=>e.status==='Upcoming').sort((a,b)=>+new Date(a.date)-+new Date(b.date))
+export const getPastEvents = () => futoEvents.filter(e=>e.status==='Completed').sort((a,b)=>+new Date(b.date)-+new Date(a.date))
+export const getEventsByCategory = (category:string) => category==='All'?futoEvents:futoEvents.filter(e=>e.category===category)
+export const searchEvents = (query:string, source=futoEvents) => { const q=query.trim().toLowerCase(); return q?source.filter(e=>[e.title,e.description,e.category,e.location,e.organizer].join(' ').toLowerCase().includes(q)):source }
+export const getEventBySlug = (slug:string) => futoEvents.find(e=>e.slug===slug)
+export const formatEventDate = (date:string) => new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(date))

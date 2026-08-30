@@ -1,0 +1,9 @@
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { ArticlePage, CategoryPage } from '@/components/futo/publishing-pages'
+import { getPublishedArticleBySlug, getPublishedArticlesByCategory } from '@/lib/news-db'
+import { absoluteUrl, truncateDescription } from '@/lib/seo'
+const map:Record<string,string>={'campus-news':'Campus News','academics':'Academics','student-life':'Student Life','events':'Events','sports':'Sports','technology-innovation':'Technology & Innovation','opportunities':'Opportunities','community':'Community'}
+export const dynamic = 'force-dynamic'
+export async function generateMetadata({params}:{params:Promise<{param:string}>}):Promise<Metadata>{const {param}=await params;const article=await getPublishedArticleBySlug(param);const category=map[param];const title=article?`${article.title} | FUTO Central`:category?`${category} News | FUTO Central`:'FUTO Central News';const description=truncateDescription(article?.excerpt||`Read the latest ${category?.toLowerCase()||'FUTO'} news and stories on FUTO Central.`);return {title,description,alternates:{canonical:absoluteUrl(`/news/${param}`)},openGraph:{title,description,type:article?'article':'website',url:absoluteUrl(`/news/${param}`),siteName:'FUTO Central',images:article?.image?[{url:article.image}]:undefined,...(article?.publishedAt?{publishedTime:article.publishedAt,authors:article.author?[article.author]:undefined}: {})},twitter:{card:'summary_large_image',title,description,images:article?.image?[article.image]:undefined}}}
+export default async function Page({params}:{params:Promise<{param:string}>}){const {param}=await params;if(map[param])return <CategoryPage category={map[param]} articles={await getPublishedArticlesByCategory(map[param])}/>;const article=await getPublishedArticleBySlug(param);if(article)return <ArticlePage article={article} related={await getPublishedArticlesByCategory(article.category)}/>;notFound()}

@@ -1,0 +1,3 @@
+import { NextResponse } from 'next/server'
+import { createHash } from 'node:crypto'
+export async function POST(request: Request){ if(!process.env.CLOUDINARY_API_SECRET||!process.env.CLOUDINARY_API_KEY||!process.env.CLOUDINARY_CLOUD_NAME) return NextResponse.json({error:'Cloudinary is not configured yet.'},{status:503}); const body=await request.json(); const timestamp=Math.floor(Date.now()/1000); const signature=createHash('sha1').update(`timestamp=${timestamp}${process.env.CLOUDINARY_API_SECRET}`).digest('hex'); return NextResponse.json({cloudName:process.env.CLOUDINARY_CLOUD_NAME,apiKey:process.env.CLOUDINARY_API_KEY,timestamp,signature,publicId:body.publicId||undefined}) }
